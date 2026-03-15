@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سباق Nova Prime - ساهر</title>
+    <style>
+        :root { 
+            --neon: #bc13fe; 
+            --neon-blue: #00e5ff;
+            --track: #111; 
+        }
+        body { 
+            margin: 0; background: #000; color: white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; 
+            text-align: center; user-select: none; 
+            touch-action: none; 
+        }
+        
+        /* الهيدر الجديد للبراند */
+        .brand-header {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 0; border-bottom: 2px solid var(--neon);
+            z-index: 1000; font-weight: bold; letter-spacing: 1px;
+            color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .game-container {
+            width: 300px; height: 100vh;
+            background: var(--track);
+            margin: 0 auto;
+            position: relative;
+            border-left: 5px solid var(--neon);
+            border-right: 5px solid var(--neon);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(188, 19, 254, 0.3);
+        }
+
+        .line {
+            width: 8px; height: 100px;
+            background: rgba(255,255,255,0.3);
+            position: absolute; left: 146px;
+            animation: moveLines 1.5s linear infinite;
+        }
+
+        @keyframes moveLines {
+            0% { top: -150px; }
+            100% { top: 100%; }
+        }
+
+        .car {
+            width: 45px; height: 75px;
+            background: var(--neon-blue);
+            position: absolute; bottom: 30px; left: 125px;
+            border-radius: 8px;
+            box-shadow: 0 0 25px var(--neon-blue);
+            z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: bold; color: black;
+        }
+
+        .enemy {
+            width: 45px; height: 75px;
+            background: #ff0055;
+            position: absolute;
+            border-radius: 8px;
+            box-shadow: 0 0 15px #ff0055;
+            z-index: 5;
+        }
+
+        #gameOverBox {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #050505;
+            border: 3px solid var(--neon-blue);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px var(--neon-blue);
+            z-index: 4000;
+            width: 260px;
+        }
+
+        .score { position: fixed; top: 60px; left: 20px; font-size: 1.2rem; color: #fff; z-index: 100; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; }
+        
+        .controls { 
+            position: fixed; bottom: 80px; 
+            width: 100%; display: flex; 
+            justify-content: center; gap: 40px; 
+            z-index: 3000; 
+        }
+        .btn { 
+            background: rgba(20, 20, 20, 0.9); 
+            border: 2px solid var(--neon-blue); 
+            color: white; 
+            width: 80px; height: 80px; 
+            border-radius: 50%; 
+            font-size: 2rem; 
+            cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+        }
+        .btn:active { background: var(--neon-blue); transform: scale(0.9); }
+
+        /* تذييل الحقوق الرسمي */
+        .footer-rights {
+            position: fixed; bottom: 10px; width: 100%;
+            text-align: center; color: #aaa;
+            font-size: 0.7rem; font-family: sans-serif;
+            z-index: 10; line-height: 1.4;
+        }
+        .footer-rights b { color: var(--neon); }
+    </style>
+</head>
+<body>
+
+    <div class="brand-header">NOVA PRIME SOFTWARE</div>
+
+    <div class="score">النقاط: <span id="scoreVal">0</span></div>
+
+    <div class="game-container" id="gameArea">
+        <div class="line" style="top:0;"></div>
+        <div class="line" style="top:250px;"></div>
+        <div class="line" style="top:500px;"></div>
+        <div id="playerCar" class="car">NP</div>
+    </div>
+
+    <div id="gameOverBox">
+        <h2 style="color: var(--neon-blue);">انتهت اللعبة يا يا بطل!</h2>
+        <p>مجموع نقاطك: <span id="finalScore">0</span></p>
+        <button onclick="location.reload()" style="background:var(--neon); color:white; border:none; padding:15px 30px; border-radius:10px; cursor:pointer; font-weight:bold; box-shadow: 0 0 15px var(--neon);">حاول مرة أخرى 🔄</button>
+    </div>
+
+    <div class="controls">
+        <button class="btn" id="leftBtn">◀️</button>
+        <button class="btn" id="rightBtn">▶️</button>
+    </div>
+
+    <div class="footer-rights">
+        جميع الحقوق محفوظة لشركة <b>Nova Prime</b> @2026<br>
+         تطوير:رئيس مجلس الادارة وصاحب الشركة الفكرة المدير التنفيذي <b>ساهر</b>
+    </div>
+
+    <script>
+        const player = document.getElementById('playerCar');
+        const gameArea = document.getElementById('gameArea');
+        const scoreVal = document.getElementById('scoreVal');
+        const gameOverBox = document.getElementById('gameOverBox');
+        
+        let playerPos = 125;
+        let score = 0;
+        let gameActive = true;
+        let moveInterval;
+
+        function startMove(dir) {
+            if (!gameActive) return;
+            if (moveInterval) clearInterval(moveInterval);
+            moveInterval = setInterval(() => {
+                if (dir === 'left' && playerPos > 10) {
+                    playerPos -= 8;
+                } else if (dir === 'right' && playerPos < 245) {
+                    playerPos += 8;
+                }
+                player.style.left = playerPos + 'px';
+            }, 20);
+        }
+
+        function stopMove() {
+            clearInterval(moveInterval);
+        }
+
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+
+        leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startMove('left'); });
+        leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopMove(); });
+        rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startMove('right'); });
+        rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopMove(); });
+
+        leftBtn.addEventListener('mousedown', () => startMove('left'));
+        leftBtn.addEventListener('mouseup', stopMove);
+        rightBtn.addEventListener('mousedown', () => startMove('right'));
+        rightBtn.addEventListener('mouseup', stopMove);
+
+        function createEnemy() {
+            if(!gameActive) return;
+            const enemy = document.createElement('div');
+            enemy.classList.add('enemy');
+            enemy.style.left = Math.floor(Math.random() * 240) + 10 + 'px';
+            enemy.style.top = '-100px';
+            gameArea.appendChild(enemy);
+
+            let enemyPos = -100;
+            let enemyInterval = setInterval(() => {
+                if(!gameActive) { clearInterval(enemyInterval); enemy.remove(); return; }
+                
+                enemyPos += 6; 
+                enemy.style.top = enemyPos + 'px';
+
+                let pRect = player.getBoundingClientRect();
+                let eRect = enemy.getBoundingClientRect();
+
+                if (!(pRect.right < eRect.left || 
+                      pRect.left > eRect.right || 
+                      pRect.bottom < eRect.top || 
+                      pRect.top > eRect.bottom)) {
+                    gameActive = false;
+                    document.getElementById('finalScore').innerText = score;
+                    gameOverBox.style.display = 'block';
+                    stopMove();
+                }
+
+                if (enemyPos > window.innerHeight) {
+                    enemy.remove();
+                    score++;
+                    scoreVal.innerText = score;
+                    clearInterval(enemyInterval);
+                }
+            }, 20);
+        }
+
+        setInterval(createEnemy, 1200);
+    </script>
+</body>
+</html>
